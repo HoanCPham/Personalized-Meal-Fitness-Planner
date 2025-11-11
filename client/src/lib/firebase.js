@@ -4,6 +4,10 @@ import {
   getAuth,
   GoogleAuthProvider,
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
+  setPersistence,
+  browserLocalPersistence,
   signOut,
   onAuthStateChanged,
 } from "firebase/auth";
@@ -22,12 +26,39 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Firebase services
+// Services
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 
-// Google Auth helpers
+// Persist auth across tabs/refreshes
+setPersistence(auth, browserLocalPersistence).catch(console.warn);
+
+// Provider (optionally request profile/email)
 const provider = new GoogleAuthProvider();
-export const loginWithGoogle = () => signInWithPopup(auth, provider);
+provider.addScope("profile");
+provider.addScope("email");
+
+// Robust Google login: popup first, fallback to redirect
+export async function loginWithGoogle() {
+  try {
+    return await signInWithPopup(auth, provider);
+  } catch (err) {
+    // Common popup issues: blocked or cancelled
+    if (
+      err?.code === "auth/popup-blocked" ||
+      err?.code === "auth/cancelled-popup-request" ||
+      err?.code === "auth/popup-closed-by-user"
+    ) {
+      await signInWithRedirect(auth, provider);
+      // When redirected back, this resolves with the user credential (ignore errors silently)
+      return getRedirectResult(auth).catch(() => null);
+    }
+    // Surface other errors to the caller
+    throw err;
+  }
+}
+
 export const logout = () => signOut(auth);
+
+// Auth state subscription
 export const onUserChange = (callback) => onAuthStateChanged(auth, callback);

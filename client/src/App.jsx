@@ -1,75 +1,54 @@
 import { useEffect, useState } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
-import "./App.css";
+import { onUserChange } from "./lib/firebase";
+import Login from "./pages/Login";
 
-// Import Firebase helpers
-import { loginWithGoogle, logout, onUserChange } from "./lib/firebase";
-
-function App() {
-  const [count, setCount] = useState(0);
+export default function App() {
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Watch for Firebase auth state changes
+  // Listen for Firebase auth state
   useEffect(() => {
-    return onUserChange(setUser);
+    const unsub = onUserChange((u) => {
+      setUser(u);
+      setLoading(false);
+    });
+    return unsub;
   }, []);
 
-  // Read your Firebase Project ID from .env
-  const projectId = import.meta.env.VITE_FB_PROJECT_ID;
-  console.log("Firebase Project ID:", projectId);
+  if (loading) {
+    return (
+      <div
+        style={{
+          minHeight: "100dvh",
+          display: "grid",
+          placeItems: "center",
+          background: "#0b0f0f",
+          color: "#e6f1f1",
+        }}
+      >
+        <p>Loading...</p>
+      </div>
+    );
+  }
 
+  // Show Login page if not signed in
+  if (!user) return <Login />;
+
+  // Otherwise show your main app (placeholder for now)
   return (
-    <>
+    <div
+      style={{
+        minHeight: "100dvh",
+        display: "grid",
+        placeItems: "center",
+        background: "#0b0f0f",
+        color: "#e6f1f1",
+      }}
+    >
       <div>
-        <a href="https://vite.dev" target="_blank" rel="noreferrer">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank" rel="noreferrer">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+        <h1>Welcome, {user.displayName}</h1>
+        <p>You are signed in with {user.email}</p>
       </div>
-
-      <h1>Meal Fitness Planner</h1>
-
-      {/* Firebase Project ID Display */}
-      <p style={{ color: "limegreen", marginBottom: "20px" }}>
-        Firebase Project ID: <strong>{projectId}</strong>
-      </p>
-
-      {/* Firebase Google Sign-in Section */}
-      {user ? (
-        <>
-          <p>Signed in as: {user.displayName}</p>
-          <img
-            src={user.photoURL}
-            alt="User"
-            style={{ width: "60px", borderRadius: "50%" }}
-          />
-          <br />
-          <button onClick={logout} style={{ marginTop: "10px" }}>
-            Sign out
-          </button>
-        </>
-      ) : (
-        <button onClick={loginWithGoogle}>Sign in with Google</button>
-      )}
-
-      {/* Keep Vite Counter Example (optional) */}
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    </div>
   );
 }
-
-export default App;

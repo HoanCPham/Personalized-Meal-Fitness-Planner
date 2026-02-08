@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { onUserChange } from "./lib/firebase";
-import Login from "./pages/Login";
+import { onUserChange } from "../lib/firebase";
+import Login from "../pages/Login";
 
 export default function App() {
   const [user, setUser] = useState(null);
